@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
 
 // Define the person schema
 const personSchema = new mongoose.Schema({
@@ -30,6 +31,32 @@ const personSchema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true
+    },
+    username: {
+        type: String,
+        required: true
+    },
+    password: {
+        type: String,
+        required: true
+    }
+})
+
+personSchema.pre('save', async function(next) {
+    const person = this;
+    if(!person.isModified('password')) return  next();
+    try {
+        //hash password generation
+        const salt = await bcrypt.genSalt(10);
+        
+        // hash password
+        const hashedPassword = await bcrypt.hashedPassword(person.password, salt);
+
+        // override the plain password
+        person.password = hashedPassword;
+        next();
+    } catch {
+        return next(err);
     }
 })
 
