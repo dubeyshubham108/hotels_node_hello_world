@@ -18,7 +18,7 @@ const personSchema = new mongoose.Schema({
     mobile: {
         type: String,
         required: true,
-        unique: true
+        unique: false
     },
     address: {
         type: String
@@ -50,15 +50,25 @@ personSchema.pre('save', async function(next) {
         const salt = await bcrypt.genSalt(10);
         
         // hash password
-        const hashedPassword = await bcrypt.hashedPassword(person.password, salt);
+        const hashedPassword = await bcrypt.hash(person.password, salt);
 
         // override the plain password
         person.password = hashedPassword;
         next();
-    } catch {
+    } catch(err) {
         return next(err);
     }
 })
+
+personSchema.methods.comparePassword = async function(candidatePassword){
+    try{
+        // Use bcrypt to compare the provided password with the hashed password
+        const isMatch = await bcrypt.compare(candidatePassword, this.password);
+        return isMatch;
+    }catch(err){
+        throw err;
+    }
+}
 
 // Create Person model
 const Person = mongoose.model('Person', personSchema);
